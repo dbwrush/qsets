@@ -369,17 +369,12 @@
                 
                 status.innerHTML = '<div class="info">Generating sets...</div>';
                 
-                generatedSets = [];
-                const setNames = [];
-                let remainingPool = [...questionPool];
+                // Use the new generateMultipleQuestionSets function
+                generatedSets = generateMultipleQuestionSets(questionPool, numSets, useSituation, selectedBooks);
                 
+                const setNames = [];
                 for (let i = 1; i <= numSets; i++) {
-                    const setName = `${setNamePrefix}${i}`;
-                    setNames.push(setName);
-                    
-                    const result = generateQuestionSet(remainingPool, useSituation, selectedBooks, questionPool);
-                    generatedSets.push(result.set);
-                    remainingPool = result.remainingPool;
+                    setNames.push(`${setNamePrefix}${i}`);
                 }
                 
                 // Update section tag

@@ -269,10 +269,17 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
     // books is an array of book object. Each has a book name and a range of chapters. This way we can pull from one range of chapters from one book, and a different range from another book, for a single question set.
     // wholePool is the original complete pool before any questions were removed, used as fallback when pool is insufficient
 
+    // Shuffle both entire pools
+    pool = shuffleArray(pool);
+    if (wholePool) {
+        wholePool = shuffleArray(wholePool);
+    }
+
     // Filter the pool to only include questions from the specified books and chapters
     // books: [{ name: 'John', chapters: [1,2,3] }, ...]
     // pool: [{ reference: 'John 3:16', ... }, ...]
-    
+    // wholePool: [{ reference: 'John 3:16', ... }, ...] (if provided)
+
     // Build a lookup for quick book/chapter inclusion
     const allowed = {};
     books.forEach(b => {
@@ -309,28 +316,13 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
 
     // Helper to pick a question of a type, not exceeding chapter limits
     function pickQuestion(type, usedChapters, poolArr) {
-        const candidates = (byType[type] || []).filter(q => {
+        const candidates = poolArr.filter(q => {
+            if (q.type !== type) return false;
+            if (usedQuestions.has(q)) return false;
             const { book, chapter } = getBookAndChapter(q.reference);
             const key = `${book} ${chapter}`;
-            return chapterUsage[key] < maxAppearances && !usedChapters.has(key) && poolArr.includes(q) && !usedQuestions.has(q);
+            return chapterUsage[key] < maxAppearances && !usedChapters.has(key);
         });
-        
-        // Fallback to wholePool if no candidates found
-        if (candidates.length === 0 && wholePool) {
-            const wholeCandidates = (byTypeWhole[type] || []).filter(q => {
-                const { book, chapter } = getBookAndChapter(q.reference);
-                const key = `${book} ${chapter}`;
-                return chapterUsage[key] < maxAppearances && !usedChapters.has(key) && !usedQuestions.has(q);
-            });
-            if (wholeCandidates.length > 0) {
-                const q = wholeCandidates[Math.floor(Math.random() * wholeCandidates.length)];
-                const { book, chapter } = getBookAndChapter(q.reference);
-                chapterUsage[`${book} ${chapter}`]++;
-                usedChapters.add(`${book} ${chapter}`);
-                usedQuestions.add(q);
-                return q;
-            }
-        }
         
         if (candidates.length === 0) return null;
         const q = candidates[Math.floor(Math.random() * candidates.length)];
@@ -346,34 +338,22 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
 
     // Helper to pick a question of a type, allowing repeats up to maxAppearances
     function pickQuestionAllowRepeat(type, poolArr) {
-        const candidates = (byType[type] || []).filter(q => {
+        const candidates = poolArr.filter(q => {
+            if (q.type !== type) return false;
+            if (usedQuestions.has(q)) return false;
             const { book, chapter } = getBookAndChapter(q.reference);
             const key = `${book} ${chapter}`;
-            return chapterUsage[key] < maxAppearances && poolArr.includes(q) && !usedQuestions.has(q);
+            return chapterUsage[key] < maxAppearances;
         });
-        
-        // Fallback to wholePool if no candidates found
-        if (candidates.length === 0 && wholePool) {
-            const wholeCandidates = (byTypeWhole[type] || []).filter(q => {
-                const { book, chapter } = getBookAndChapter(q.reference);
-                const key = `${book} ${chapter}`;
-                return chapterUsage[key] < maxAppearances && !usedQuestions.has(q);
-            });
-            if (wholeCandidates.length > 0) {
-                const q = wholeCandidates[Math.floor(Math.random() * wholeCandidates.length)];
-                const { book, chapter } = getBookAndChapter(q.reference);
-                chapterUsage[`${book} ${chapter}`]++;
-                usedQuestions.add(q);
-                return q;
-            }
-        }
         
         if (candidates.length === 0) return null;
         const q = candidates[Math.floor(Math.random() * candidates.length)];
         const { book, chapter } = getBookAndChapter(q.reference);
         chapterUsage[`${book} ${chapter}`]++;
         usedQuestions.add(q);
-        // Don't remove from poolArr for pickQuestionAllowRepeat - we want to allow chapter repeats
+        // Remove from poolArr to prevent reuse in the same set
+        const idx = poolArr.indexOf(q);
+        if (idx !== -1) poolArr.splice(idx, 1);
         return q;
     }
 
@@ -386,20 +366,24 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
     // Situation or In-What-Book-and-Chapter
     if (situation) {
         const q = pickQuestion('Situation', usedChapters, poolArr);
-        if (q) set.push(q);
+        if (!q) return null; // Unable to find required question type
+        set.push(q);
     } else {
         const q = pickQuestion('In-What-Book-and-Chapter', usedChapters, poolArr);
-        if (q) set.push(q);
+        if (!q) return null; // Unable to find required question type
+        set.push(q);
     }
     // 1 quote, 1 reference, 1 verse, 1 context
-    ['Quote', 'Reference', 'Verse', 'Context'].forEach(type => {
+    for (const type of ['Quote', 'Reference', 'Verse', 'Context']) {
         const q = pickQuestion(type, usedChapters, poolArr);
-        if (q) set.push(q);
-    });
+        if (!q) return null; // Unable to find required question type
+        set.push(q);
+    }
     // 4 According-To
     for (let i = 0; i < 4; ++i) {
         const q = pickQuestion('According-To', usedChapters, poolArr);
-        if (q) set.push(q);
+        if (!q) return null; // Unable to find required question type
+        set.push(q);
     }
     // If still not 20, fill with General questions first, then any type
     while (set.length < 20) {
@@ -413,7 +397,10 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
         // If no General questions available, try any remaining type
         if (!q) {
             const allTypes = Object.keys(byType);
-            if (allTypes.length === 0) break;
+            if (allTypes.length === 0) {
+                // No more question types available, return null to trigger pool refresh
+                return null;
+            }
             
             // Try each type until we find one with available questions
             let foundQuestion = false;
@@ -424,11 +411,24 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
                     break;
                 }
             }
-            if (!foundQuestion) break;
+            if (!foundQuestion) {
+                // Unable to find any more questions, return null to trigger pool refresh
+                return null;
+            }
         }
         
-        if (q) set.push(q);
-        else break;
+        if (q) {
+            set.push(q);
+        } else {
+            // Unable to find any more questions, return null to trigger pool refresh
+            return null;
+        }
+    }
+
+    // Shuffle whole set
+    for (let i = set.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [set[i], set[j]] = [set[j], set[i]];
     }
 
     // 2. Apply the replacement rule 4 times
@@ -544,11 +544,6 @@ function generateTypeOnlySet(pool, type, books, wholePool = null) {
             }
         });
 
-        // Fallback to wholePool if no candidates found
-        if (candidates.length === 0 && wholePool && poolArr === filteredPool) {
-            return pickQuestionTypeOnly(filteredWholePool, allowRepeats);
-        }
-
         if (candidates.length === 0) return null;
         
         const q = candidates[Math.floor(Math.random() * candidates.length)];
@@ -566,18 +561,26 @@ function generateTypeOnlySet(pool, type, books, wholePool = null) {
     // Phase 1: Fill from each chapter once
     for (let i = 0; i < uniqueChapters.size && set.length < 20; i++) {
         const q = pickQuestionTypeOnly(poolArr, false);
-        if (q) {
-            set.push(q);
-            // Remove from poolArr
-            const idx = poolArr.indexOf(q);
-            if (idx !== -1) poolArr.splice(idx, 1);
+        if (!q) {
+            // If we can't fill even one question from each chapter, we need more questions
+            if (set.length < Math.min(uniqueChapters.size, 20)) {
+                return null; // Signal that pool refresh is needed
+            }
+            break;
         }
+        set.push(q);
+        // Remove from poolArr
+        const idx = poolArr.indexOf(q);
+        if (idx !== -1) poolArr.splice(idx, 1);
     }
 
     // Phase 2: Fill remaining slots allowing chapter repeats up to maxAppearances
     while (set.length < 20) {
         const q = pickQuestionTypeOnly(poolArr, true);
-        if (!q) break;
+        if (!q) {
+            // If we can't reach 20 questions, that's still acceptable for type-only sets
+            break;
+        }
         set.push(q);
         // Remove from poolArr
         const idx = poolArr.indexOf(q);
@@ -823,4 +826,196 @@ function generateSectionTag(books) {
     });
     
     return bookTags.join(', ');
+}
+
+function validateQuestionSet(set, expectedSize = 20) {
+    // Validate that a question set meets the requirements
+    if (!set || !Array.isArray(set)) {
+        throw new Error('Invalid question set: not an array');
+    }
+    
+    if (set.length !== expectedSize) {
+        throw new Error(`Invalid question set: expected ${expectedSize} questions, got ${set.length}`);
+    }
+    
+    // Check for duplicates by question text
+    const questionTexts = new Set();
+    const references = new Set();
+    
+    for (const q of set) {
+        if (!q || typeof q !== 'object') {
+            throw new Error('Invalid question object in set');
+        }
+        
+        if (!q.question || !q.type || !q.reference || !q.answer) {
+            throw new Error('Question object missing required fields (question, type, reference, answer)');
+        }
+        
+        // Check for duplicate questions by text
+        if (questionTexts.has(q.question)) {
+            throw new Error(`Duplicate question found in set: "${q.question}"`);
+        }
+        questionTexts.add(q.question);
+        
+        // Check for duplicate references (less strict, as multiple questions can reference same verse)
+        if (references.has(q.reference)) {
+            console.warn(`Duplicate reference found in set: ${q.reference} (this may be acceptable)`);
+        }
+        references.add(q.reference);
+    }
+    
+    // Check question type distribution
+    const typeCounts = {};
+    set.forEach(q => {
+        typeCounts[q.type] = (typeCounts[q.type] || 0) + 1;
+    });
+    
+    // Log the type distribution for debugging
+    console.log('Question type distribution:', typeCounts);
+    
+    return true;
+}
+
+function generateMultipleQuestionSets(originalPool, numSets, situation, books) {
+    // Generate multiple question sets with automatic pool refresh when needed
+    // originalPool: the complete question pool to draw from
+    // numSets: number of sets to generate
+    // situation: boolean - whether to use Situation questions or In-What-Book-and-Chapter
+    // books: array of book objects defining which chapters to include
+    
+    // First, check if the original pool is adequate
+    const adequacyCheck = checkPoolAdequacy(originalPool, books, situation);
+    if (!adequacyCheck.adequate) {
+        throw new Error(`Insufficient questions in pool: ${adequacyCheck.issues.join(', ')}`);
+    }
+    
+    console.log('Pool adequacy check passed:', adequacyCheck.typeCounts);
+    
+    const sets = [];
+    let currentPool = originalPool.slice(); // Start with a copy of the original pool
+    
+    for (let i = 0; i < numSets; i++) {
+        let result = generateQuestionSet(currentPool, situation, books, originalPool);
+        
+        // If generation failed (returned null), refresh the pool and try again
+        if (result === null) {
+            console.log(`Set ${i + 1} generation failed, refreshing pool and retrying...`);
+            currentPool = originalPool.slice(); // Reset to full pool
+            result = generateQuestionSet(currentPool, situation, books, originalPool);
+            
+            // If still null after refresh, there's a fundamental issue
+            if (result === null) {
+                throw new Error(`Unable to generate set ${i + 1} even after pool refresh. Check that there are sufficient questions of all required types.`);
+            }
+        }
+        
+        // Validate the generated set
+        try {
+            validateQuestionSet(result.set, 20);
+            console.log(`Set ${i + 1} generated successfully with ${result.set.length} questions`);
+        } catch (validationError) {
+            throw new Error(`Set ${i + 1} validation failed: ${validationError.message}`);
+        }
+        
+        sets.push(result.set);
+        currentPool = result.remainingPool; // Update pool for next iteration
+        
+        // Log remaining pool size
+        console.log(`Remaining pool after set ${i + 1}: ${result.remainingPool.length} questions`);
+    }
+    
+    return sets;
+}
+
+function generateMultipleTypeOnlySets(originalPool, type, numSets, books) {
+    // Generate multiple type-only question sets with automatic pool refresh when needed
+    // Similar to generateMultipleQuestionSets but for single-type sets
+    
+    const sets = [];
+    let currentPool = originalPool.filter(q => q.type === type); // Start with only questions of the specified type
+    
+    for (let i = 0; i < numSets; i++) {
+        let result = generateTypeOnlySet(currentPool, type, books, originalPool);
+        
+        // If generation failed (returned null or empty set), refresh the pool and try again
+        if (result === null || result.set.length === 0) {
+            console.log(`Type-only set ${i + 1} generation failed, refreshing pool and retrying...`);
+            currentPool = originalPool.filter(q => q.type === type); // Reset to full type-filtered pool
+            result = generateTypeOnlySet(currentPool, type, books, originalPool);
+            
+            // If still null/empty after refresh, there's a fundamental issue
+            if (result === null || result.set.length === 0) {
+                throw new Error(`Unable to generate type-only set ${i + 1} for type "${type}" even after pool refresh. Check that there are sufficient questions of this type.`);
+            }
+        }
+        
+        sets.push(result.set);
+        currentPool = result.remainingPool; // Update pool for next iteration
+    }
+    
+    return sets;
+}
+
+function checkPoolAdequacy(pool, books, situation = true) {
+    // Check if the pool has enough questions of each required type for the given books/chapters
+    const allowed = {};
+    books.forEach(b => {
+        allowed[b.name] = new Set(b.chapters);
+    });
+
+    const filteredPool = pool.filter(q => {
+        const { book, chapter } = getBookAndChapter(q.reference);
+        return allowed[book] && allowed[book].has(chapter);
+    });
+
+    const typeCounts = {};
+    filteredPool.forEach(q => {
+        typeCounts[q.type] = (typeCounts[q.type] || 0) + 1;
+    });
+
+    const requiredTypes = ['Quote', 'Reference', 'Verse', 'Context', 'According-To'];
+    if (situation) {
+        requiredTypes.push('Situation');
+    } else {
+        requiredTypes.push('In-What-Book-and-Chapter');
+    }
+
+    const issues = [];
+    const requiredCounts = {
+        'Quote': 1,
+        'Reference': 1,
+        'Verse': 1,
+        'Context': 1,
+        'According-To': 4,
+        'Situation': 1,
+        'In-What-Book-and-Chapter': 1
+    };
+
+    requiredTypes.forEach(type => {
+        const available = typeCounts[type] || 0;
+        const needed = requiredCounts[type] || 1;
+        if (available < needed) {
+            issues.push(`${type}: need ${needed}, have ${available}`);
+        }
+    });
+
+    // Check for General questions to fill the rest
+    const generalCount = typeCounts['General'] || 0;
+    const totalRequired = requiredTypes.reduce((sum, type) => sum + (requiredCounts[type] || 1), 0);
+    const remainingSlots = 20 - totalRequired;
+    
+    if (generalCount < remainingSlots) {
+        // Check if we have enough questions of any type to fill remaining slots
+        const totalAvailable = Object.values(typeCounts).reduce((sum, count) => sum + count, 0);
+        if (totalAvailable < 20) {
+            issues.push(`Total: need 20 questions, have ${totalAvailable} available`);
+        }
+    }
+
+    return {
+        adequate: issues.length === 0,
+        issues: issues,
+        typeCounts: typeCounts,
+        totalQuestions: filteredPool.length
+    };
 }
