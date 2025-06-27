@@ -373,9 +373,7 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
         const { book, chapter } = getBookAndChapter(q.reference);
         chapterUsage[`${book} ${chapter}`]++;
         usedQuestions.add(q);
-        // Remove from poolArr
-        const idx = poolArr.indexOf(q);
-        if (idx !== -1) poolArr.splice(idx, 1);
+        // Don't remove from poolArr for pickQuestionAllowRepeat - we want to allow chapter repeats
         return q;
     }
 
@@ -403,13 +401,34 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
         const q = pickQuestion('According-To', usedChapters, poolArr);
         if (q) set.push(q);
     }
-    // If still not 20, fill with any type
+    // If still not 20, fill with General questions first, then any type
     while (set.length < 20) {
-        const allTypes = Object.keys(byType);
-        if (allTypes.length === 0) break;
-        const q = pickQuestionAllowRepeat(allTypes[Math.floor(Math.random() * allTypes.length)], poolArr);
-        if (!q) break;
-        set.push(q);
+        let q = null;
+        
+        // First try to get a General question
+        if (byType['General'] && byType['General'].length > 0) {
+            q = pickQuestionAllowRepeat('General', poolArr);
+        }
+        
+        // If no General questions available, try any remaining type
+        if (!q) {
+            const allTypes = Object.keys(byType);
+            if (allTypes.length === 0) break;
+            
+            // Try each type until we find one with available questions
+            let foundQuestion = false;
+            for (const type of allTypes) {
+                q = pickQuestionAllowRepeat(type, poolArr);
+                if (q) {
+                    foundQuestion = true;
+                    break;
+                }
+            }
+            if (!foundQuestion) break;
+        }
+        
+        if (q) set.push(q);
+        else break;
     }
 
     // 2. Apply the replacement rule 4 times
@@ -734,4 +753,67 @@ function genRTFFile(roundNames, sets, sectionTag) {// Generate an RTF format str
     rtfContent += generateRTFFooter();
 
     return rtfContent;
+}
+
+// Example usage function for testing
+function createSampleCSV() {
+    // Generate a sample CSV string for testing
+    const sampleData = [
+        ['Question', 'Type', 'Reference', 'Answer'],
+        ['Who were praying outside when the time for the burning of incense came?', 'General', 'Luke 1:10', 'All the assembled worshipers (Luke 1:10)'],
+        ['According to Luke, chapter 14, verse 9, what will the host say to you?', 'According-To', 'Luke 14:9', '"Give this person your seat." (Luke 14:9)'],
+        ['Quote Luke, chapter 6, verses 22 through 23.', 'Quote', 'Luke 6:22-23', '"Blessed are you when people hate you, when they exclude you and insult you and reject your name as evil, because of the Son of Man. Rejoice in that day and leap for joy, because great is your reward in heaven. For that is how their ancestors treated the prophets." (Luke 6:22-23)'],
+        ['Finish these verses and give the reference: "While they were there, the..."', 'Reference', 'Luke 2:6-7', '"...time came for the baby to be born, and she gave birth to her firstborn, a son. She wrapped him in cloths and placed him in a manger, because there was no guest room available for them." (Luke 2:6-7)'],
+        ['Situation question: who said it, to whom, and in reply to what: "Go tell that fox..."', 'Situation', 'Luke 13:31-32', 'Jesus said it to some Pharisees, in reply to, "Leave this place and go somewhere else. Herod wants to kill you." (Luke 13:31-32)']
+    ];
+    
+    return sampleData.map(row => 
+        row.map(field => 
+            field.includes(',') || field.includes('"') || field.includes('\n') 
+                ? `"${field.replace(/"/g, '""')}"` 
+                : field
+        ).join(',')
+    ).join('\n');
+}
+
+function generateSectionTag(books) {
+    // Generate a section tag from books array
+    // books: [{ name: 'Luke', chapters: [1,2,3,4,5] }, { name: 'John', chapters: [1,2] }]
+    // Returns: 'Luke 1-5, John 1-2' or 'Luke 1,3,5' for non-consecutive chapters
+    
+    if (!books || books.length === 0) {
+        return 'Unknown Section';
+    }
+    
+    const bookTags = books.map(book => {
+        if (!book.chapters || book.chapters.length === 0) {
+            return book.name;
+        }
+        
+        // Sort chapters numerically
+        const sortedChapters = [...book.chapters].sort((a, b) => a - b);
+        
+        if (sortedChapters.length === 1) {
+            return `${book.name} ${sortedChapters[0]}`;
+        }
+        
+        // Check if chapters are consecutive
+        let isConsecutive = true;
+        for (let i = 1; i < sortedChapters.length; i++) {
+            if (sortedChapters[i] !== sortedChapters[i-1] + 1) {
+                isConsecutive = false;
+                break;
+            }
+        }
+        
+        if (isConsecutive) {
+            // Use range format: "Luke 1-5"
+            return `${book.name} ${sortedChapters[0]}-${sortedChapters[sortedChapters.length - 1]}`;
+        } else {
+            // Use comma-separated format: "Luke 1,3,5"
+            return `${book.name} ${sortedChapters.join(',')}`;
+        }
+    });
+    
+    return bookTags.join(', ');
 }

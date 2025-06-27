@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bible Quiz Set Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            background: #f9f9f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        
+        input[type="file"] {
+            padding: 5px;
+        }
+        
+        input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+        
+        button {
+            background: #007cba;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        button:hover {
+            background: #005a87;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .error {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .success {
+            color: #2e7d32;
+            background: #e8f5e8;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .warning {
+            color: #f57c00;
+            background: #fff3e0;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .warning span {
+            color: #f57c00;
+            font-weight: bold;
+        }
+        
+        .info {
+            color: #1976d2;
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .book-selection {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        
+        .book-item {
+            background: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        
+        .chapter-range {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+        
+        .chapter-range input {
+            width: 60px;
+        }
+        
+        .results {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        .set-info {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        
+        .download-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .file-info {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Bible Quiz Set Generator</h1>
+    <p>Generate fair and unpredictable question sets for Bible quiz competitions with proper RTF and JSON export formats.</p>
+
+    <!-- File Upload Section -->
+    <div class="container">
+        <h2>1. Upload Question Pool</h2>
+        <div class="form-group">
+            <label for="csvFile">Select CSV File:</label>
+            <input type="file" id="csvFile" accept=".csv" />
+            <div class="file-info">
+                <strong>CSV Format:</strong> Question, Type, Reference, Answer<br>
+                <strong>Supported Types:</strong> General, According-To, Quote, Reference, Situation, In-What-Book-and-Chapter, Context, Verse
+            </div>
+        </div>
+        <div id="fileStatus"></div>
+    </div>
+
+    <!-- Book and Chapter Selection -->
+    <div class="container">
+        <h2>2. Select Books and Chapters</h2>
+        <div id="bookSelection" class="book-selection">
+            <!-- Book selection will be populated after CSV upload -->
+            <div class="info">Please upload a CSV file first to see available books.</div>
+        </div>
+    </div>
+
+    <!-- Set Generation Options -->
+    <div class="container">
+        <h2>3. Set Generation Options</h2>
+        <div class="form-group">
+            <label for="numSets">Number of Sets:</label>
+            <input type="number" id="numSets" min="1" max="20" value="1" />
+        </div>
+        <div class="form-group">
+            <label for="setNamePrefix">Set Name Prefix:</label>
+            <input type="text" id="setNamePrefix" value="SET #" placeholder="e.g., SET #, Round " />
+        </div>
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="useSituation" checked />
+                Use Situation questions (uncheck for In-What-Book-and-Chapter)
+            </label>
+        </div>
+    </div>
+
+    <!-- Generate Button -->
+    <div class="container">
+        <h2>4. Generate Sets</h2>
+        <button id="generateBtn" onclick="generateSets()" disabled>Generate Question Sets</button>
+        <div id="generateStatus"></div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="results" class="container" style="display: none;">
+        <h2>Generated Sets</h2>
+        <div id="setResults"></div>
+        <div class="download-buttons">
+            <button id="downloadRTF" onclick="downloadRTF()">Download RTF (for Quizmasters)</button>
+            <button id="downloadJSON" onclick="downloadJSON()">Download JSON (for QPerformance)</button>
+        </div>
+    </div>
+
+    <script src="main.js"></script>
+    <script>
+        let questionPool = [];
+        let generatedSets = [];
+        let availableBooks = [];
+        let sectionTag = '';
+
+        // File upload handling
+        document.getElementById('csvFile').addEventListener('change', handleFileUpload);
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            const status = document.getElementById('fileStatus');
+            
+            if (!file) {
+                status.innerHTML = '';
+                return;
+            }
+
+            try {
+                status.innerHTML = '<div class="info">Loading CSV file...</div>';
+                const result = await readCSVFile(file);
+                
+                questionPool = result.questions;
+                status.innerHTML = `<div class="success">
+                    ✓ Loaded ${result.validRows} questions from ${result.totalRows} rows
+                    ${result.errors.length > 0 ? `<br>⚠ ${result.errors.length} warnings (check console)` : ''}
+                </div>`;
+                
+                // Extract available books
+                extractAvailableBooks();
+                populateBookSelection();
+                document.getElementById('generateBtn').disabled = false;
+                
+            } catch (error) {
+                status.innerHTML = `<div class="error">Error loading file: ${error.message}</div>`;
+                questionPool = [];
+                document.getElementById('generateBtn').disabled = true;
+            }
+        }
+
+        function extractAvailableBooks() {
+            const bookChapters = {};
+            
+            questionPool.forEach(q => {
+                try {
+                    const { book, chapter } = getBookAndChapter(q.reference);
+                    if (!bookChapters[book]) {
+                        bookChapters[book] = new Set();
+                    }
+                    bookChapters[book].add(chapter);
+                } catch (e) {
+                    // Skip invalid references
+                }
+            });
+            
+            availableBooks = Object.keys(bookChapters).map(book => ({
+                name: book,
+                chapters: Array.from(bookChapters[book]).sort((a, b) => a - b)
+            }));
+        }
+
+        function populateBookSelection() {
+            const container = document.getElementById('bookSelection');
+            
+            if (availableBooks.length === 0) {
+                container.innerHTML = '<div class="info">No valid books found in CSV file.</div>';
+                return;
+            }
+            
+            container.innerHTML = availableBooks.map(book => `
+                <div class="book-item">
+                    <label>
+                        <input type="checkbox" class="book-checkbox" data-book="${book.name}" onchange="updateSectionTag()" />
+                        <strong>${book.name}</strong> (${book.chapters.length} chapters)
+                    </label>
+                    <div class="chapter-range">
+                        <label>From:</label>
+                        <input type="number" class="chapter-from" data-book="${book.name}" 
+                               min="${Math.min(...book.chapters)}" max="${Math.max(...book.chapters)}" 
+                               value="${Math.min(...book.chapters)}" onchange="updateSectionTag()" />
+                        <label>To:</label>
+                        <input type="number" class="chapter-to" data-book="${book.name}" 
+                               min="${Math.min(...book.chapters)}" max="${Math.max(...book.chapters)}" 
+                               value="${Math.max(...book.chapters)}" onchange="updateSectionTag()" />
+                    </div>
+                    <small>Available: ${book.chapters.join(', ')}</small>
+                </div>
+            `).join('');
+        }
+
+        function updateSectionTag() {
+            const selectedBooks = getSelectedBooks();
+            sectionTag = generateSectionTag(selectedBooks);
+            
+            // Show preview
+            const generateBtn = document.getElementById('generateBtn');
+            if (selectedBooks.length > 0) {
+                generateBtn.textContent = `Generate Question Sets (${sectionTag})`;
+                generateBtn.disabled = false;
+            } else {
+                generateBtn.textContent = 'Generate Question Sets';
+                generateBtn.disabled = questionPool.length === 0;
+            }
+        }
+
+        function getSelectedBooks() {
+            const books = [];
+            
+            document.querySelectorAll('.book-checkbox:checked').forEach(checkbox => {
+                const bookName = checkbox.dataset.book;
+                const fromInput = document.querySelector(`.chapter-from[data-book="${bookName}"]`);
+                const toInput = document.querySelector(`.chapter-to[data-book="${bookName}"]`);
+                
+                const from = parseInt(fromInput.value);
+                const to = parseInt(toInput.value);
+                
+                const chapters = [];
+                for (let i = Math.min(from, to); i <= Math.max(from, to); i++) {
+                    chapters.push(i);
+                }
+                
+                books.push({
+                    name: bookName,
+                    chapters: chapters
+                });
+            });
+            
+            return books;
+        }
+
+        function generateSets() {
+            const status = document.getElementById('generateStatus');
+            const resultsDiv = document.getElementById('results');
+            
+            try {
+                const selectedBooks = getSelectedBooks();
+                if (selectedBooks.length === 0) {
+                    status.innerHTML = '<div class="error">Please select at least one book and chapter range.</div>';
+                    return;
+                }
+                
+                const numSets = parseInt(document.getElementById('numSets').value);
+                const setNamePrefix = document.getElementById('setNamePrefix').value;
+                const useSituation = document.getElementById('useSituation').checked;
+                
+                status.innerHTML = '<div class="info">Generating sets...</div>';
+                
+                generatedSets = [];
+                const setNames = [];
+                let remainingPool = [...questionPool];
+                
+                for (let i = 1; i <= numSets; i++) {
+                    const setName = `${setNamePrefix}${i}`;
+                    setNames.push(setName);
+                    
+                    const result = generateQuestionSet(remainingPool, useSituation, selectedBooks, questionPool);
+                    generatedSets.push(result.set);
+                    remainingPool = result.remainingPool;
+                }
+                
+                // Update section tag
+                sectionTag = generateSectionTag(selectedBooks);
+                
+                // Display results
+                displayResults(setNames);
+                resultsDiv.style.display = 'block';
+                status.innerHTML = '<div class="success">✓ Sets generated successfully!</div>';
+                
+            } catch (error) {
+                status.innerHTML = `<div class="error">Error generating sets: ${error.message}</div>`;
+                console.error('Generation error:', error);
+            }
+        }
+
+        function displayResults(setNames) {
+            const container = document.getElementById('setResults');
+            
+            const summary = generatedSets.map((set, index) => {
+                const typeCounts = {};
+                set.forEach(q => {
+                    typeCounts[q.type] = (typeCounts[q.type] || 0) + 1;
+                });
+                
+                const warningText = set.length < 20 ? ' <span class="warning">⚠️ Incomplete set</span>' : '';
+                
+                return `
+                    <div class="set-info">
+                        <strong>${setNames[index]}</strong> (${set.length} questions)${warningText}<br>
+                        Types: ${Object.entries(typeCounts).map(([type, count]) => `${type}: ${count}`).join(', ')}
+                    </div>
+                `;
+            }).join('');
+            
+            const allSetsComplete = generatedSets.every(set => set.length === 20);
+            const warningMessage = allSetsComplete ? '' : `
+                <div class="warning">
+                    ⚠️ Some sets have fewer than 20 questions. This may be due to insufficient questions in your pool for the selected books/chapters.
+                    Consider adding more questions or selecting additional chapters.
+                </div>
+            `;
+            
+            container.innerHTML = `
+                <div class="info">
+                    <strong>Section:</strong> ${sectionTag}<br>
+                    <strong>Generated:</strong> ${generatedSets.length} sets with ${generatedSets[0]?.length || 0} questions each
+                </div>
+                ${warningMessage}
+                ${summary}
+            `;
+        }
+
+        function downloadRTF() {
+            try {
+                const setNames = [];
+                for (let i = 1; i <= generatedSets.length; i++) {
+                    setNames.push(`${document.getElementById('setNamePrefix').value}${i}`);
+                }
+                
+                const rtfContent = genRTFFile(setNames, generatedSets, sectionTag);
+                downloadFile(rtfContent, `${sectionTag.replace(/[^a-zA-Z0-9-]/g, '_')}_sets.rtf`, 'application/rtf');
+            } catch (error) {
+                alert('Error generating RTF: ' + error.message);
+            }
+        }
+
+        function downloadJSON() {
+            try {
+                const setNames = [];
+                for (let i = 1; i <= generatedSets.length; i++) {
+                    setNames.push(`${document.getElementById('setNamePrefix').value}${i}`);
+                }
+                
+                const jsonContent = genQperfFile(setNames, generatedSets);
+                downloadFile(jsonContent, `${sectionTag.replace(/[^a-zA-Z0-9-]/g, '_')}_qperf.json`, 'application/json');
+            } catch (error) {
+                alert('Error generating JSON: ' + error.message);
+            }
+        }
+
+        function downloadFile(content, filename, mimeType) {
+            const blob = new Blob([content], { type: mimeType });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
