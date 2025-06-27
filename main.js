@@ -1,3 +1,203 @@
+// CSV parsing functions for client-side file upload
+function parseCSV(csvText) {
+    // Simple CSV parser that handles quoted fields and escaped quotes
+    const lines = [];
+    let currentLine = [];
+    let currentField = '';
+    let insideQuotes = false;
+    let i = 0;
+    
+    while (i < csvText.length) {
+        const char = csvText[i];
+        const nextChar = csvText[i + 1];
+        
+        if (char === '"') {
+            if (insideQuotes && nextChar === '"') {
+                // Escaped quote inside quoted field
+                currentField += '"';
+                i += 2;
+                continue;
+            } else {
+                // Toggle quote state
+                insideQuotes = !insideQuotes;
+            }
+        } else if (char === ',' && !insideQuotes) {
+            // End of field
+            currentLine.push(currentField.trim());
+            currentField = '';
+        } else if ((char === '\n' || char === '\r') && !insideQuotes) {
+            // End of line
+            if (currentField || currentLine.length > 0) {
+                currentLine.push(currentField.trim());
+                if (currentLine.some(field => field.length > 0)) {
+                    lines.push(currentLine);
+                }
+            }
+            currentLine = [];
+            currentField = '';
+            
+            // Skip \r\n combinations
+            if (char === '\r' && nextChar === '\n') {
+                i++;
+            }
+        } else {
+            currentField += char;
+        }
+        i++;
+    }
+    
+    // Handle last field/line
+    if (currentField || currentLine.length > 0) {
+        currentLine.push(currentField.trim());
+        if (currentLine.some(field => field.length > 0)) {
+            lines.push(currentLine);
+        }
+    }
+    
+    return lines;
+}
+
+function csvToQuestionPool(csvText, options = {}) {
+    // Parse CSV text into question objects
+    // Expected CSV format: Question, Type, Reference, Answer
+    // Options can override column mapping: { questionCol: 0, typeCol: 1, referenceCol: 2, answerCol: 3, hasHeader: true }
+    
+    const defaultOptions = {
+        questionCol: 0,
+        typeCol: 1, 
+        referenceCol: 2,
+        answerCol: 3,
+        hasHeader: true
+    };
+    
+    const opts = { ...defaultOptions, ...options };
+    const lines = parseCSV(csvText);
+    
+    if (lines.length === 0) {
+        throw new Error('CSV file is empty');
+    }
+    
+    // Skip header row if present
+    const dataRows = opts.hasHeader ? lines.slice(1) : lines;
+    
+    if (dataRows.length === 0) {
+        throw new Error('No data rows found in CSV');
+    }
+    
+    const questions = [];
+    const errors = [];
+    
+    dataRows.forEach((row, index) => {
+        const rowNumber = opts.hasHeader ? index + 2 : index + 1; // For error reporting
+        
+        try {
+            // Validate row has enough columns
+            const maxCol = Math.max(opts.questionCol, opts.typeCol, opts.referenceCol, opts.answerCol);
+            if (row.length <= maxCol) {
+                errors.push(`Row ${rowNumber}: Not enough columns (expected at least ${maxCol + 1}, got ${row.length})`);
+                return;
+            }
+            
+            const question = row[opts.questionCol]?.trim();
+            const type = row[opts.typeCol]?.trim();
+            const reference = row[opts.referenceCol]?.trim();
+            const answer = row[opts.answerCol]?.trim();
+            
+            // Validate required fields
+            if (!question) {
+                errors.push(`Row ${rowNumber}: Question is empty`);
+                return;
+            }
+            if (!type) {
+                errors.push(`Row ${rowNumber}: Type is empty`);
+                return;
+            }
+            if (!reference) {
+                errors.push(`Row ${rowNumber}: Reference is empty`);
+                return;
+            }
+            if (!answer) {
+                errors.push(`Row ${rowNumber}: Answer is empty`);
+                return;
+            }
+            
+            // Validate reference format (should be "Book Chapter:Verse" or similar)
+            try {
+                getBookAndChapter(reference);
+            } catch (e) {
+                errors.push(`Row ${rowNumber}: Invalid reference format "${reference}"`);
+                return;
+            }
+            
+            questions.push({
+                question,
+                type,
+                reference,
+                answer
+            });
+            
+        } catch (e) {
+            errors.push(`Row ${rowNumber}: ${e.message}`);
+        }
+    });
+    
+    if (errors.length > 0) {
+        console.warn('CSV parsing warnings:', errors);
+    }
+    
+    if (questions.length === 0) {
+        throw new Error('No valid questions found in CSV file');
+    }
+    
+    return {
+        questions,
+        errors,
+        totalRows: dataRows.length,
+        validRows: questions.length
+    };
+}
+
+async function readCSVFile(file) {
+    // Read a File object (from HTML input) and parse it as a CSV question pool
+    // Returns a promise that resolves to the question pool
+    
+    if (!file) {
+        throw new Error('No file provided');
+    }
+    
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        throw new Error('File must be a CSV file');
+    }
+    
+    if (file.size === 0) {
+        throw new Error('File is empty');
+    }
+    
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+        throw new Error('File is too large (maximum 10MB)');
+    }
+    
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        
+        reader.onload = function(e) {
+            try {
+                const csvText = e.target.result;
+                const result = csvToQuestionPool(csvText);
+                resolve(result);
+            } catch (error) {
+                reject(error);
+            }
+        };
+        
+        reader.onerror = function() {
+            reject(new Error('Failed to read file'));
+        };
+        
+        reader.readAsText(file);
+    });
+}
+
 // Main question set generation logic
 /*
     The logic is basically the same as the existing solution, but with modifications for greater fairness and less predictability.
