@@ -662,7 +662,14 @@ function genQperfFile(roundNames, sets) {// From a collection of sets, generate 
     for (let i = 0; i < roundNames.length; i++) {
         const roundName = roundNames[i];
         const set = sets[i];
-        qperfFile[roundName] = genQperfSet(roundName, set);
+        // Store the actual object, not the stringified JSON
+        qperfFile[roundName] = {
+            round: roundName,
+            questions: set.map(q => ({
+                type: q.type,
+                reference: q.reference
+            }))
+        };
     }
     return JSON.stringify(qperfFile, null, 2);
 }
