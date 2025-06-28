@@ -3,476 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bible Quiz Set Generator</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0 auto;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        
-        .container {
-            background: var(--tile-background);
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 4px var(--hover-glow), 0 0 8px var(--glow-color-1);
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 20px;
-            flex-direction: column;
-            max-width: 98vw;
-        }
-        
-        label {
-            display: block;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        input, select, textarea {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid var(--input-background);
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        
-        button {
-            background: var(--button-background);
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 10px;
-            margin-bottom: 10px;
-        }
-        
-        button:hover {
-            background: #005a87;
-        }
-        
-        button:disabled {
-            background: var(--button-background);
-            cursor: not-allowed;
-        }
-        
-        .error {
-            color: #d32f2f;
-            background: #ffebee;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-        }
-        
-        .success {
-            color: #2e7d32;
-            background: #e8f5e8;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-        }
-        
-        .warning {
-            color: #f57c00;
-            background: #fff3e0;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-        }
-        
-        .warning span {
-            color: #f57c00;
-            font-weight: bold;
-        }
-        
-        #setNamePrefix, #csvfile {
-            width: 200px;
-            background: var(--input-background);
-            color: var(--text-color);
-            border: 1px solid var(--tile-border);
-            box-shadow: 0 0 0 0 var(--glow-color-1), 0 0 8px var(--hover-glow);
-        }
-
-        .info {
-            color: var(--text-color);
-            background: var(--tile-background);
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 4px var(--hover-glow), 0 0 8px var(--glow-color-1);
-        }
-        
-        .book-selection {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-top: 10px;
-        }
-        
-        .book-item {
-            background: var(--input-background);
-            padding: 15px;
-            border-radius: 4px;
-            border: 1px solid #ddd;
-        }
-        
-        .chapter-range {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-            margin-top: 10px;
-        }
-        
-        .chapter-range input {
-            width: 60px;
-        }
-        
-        .results {
-            background: var(--tile-background);
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid var(--tile-border);
-        }
-        
-        .set-info {
-            background: var(--input-background);
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
-        
-        .download-buttons {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-        }
-        
-        .file-info {
-            background: var(--table-row-bg);
-            border: 1px solid var(--tile-border);
-            padding: 10px;
-            border-radius: 4px;
-            margin-top: 10px;
-        }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-:root {
-  --background-gradient: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
-  --glow-color-1: #24c8db;
-  --glow-color-2: #1dd1a1;
-  --glow-color-3: #3b82f6;
-  --text-color: #fff;
-  --tile-background: rgba(31, 31, 31, 0.8);
-  --tile-border: #2c5364;
-  --hover-glow: rgba(36, 200, 219, 0.3);
-  --button-background: #1a2b3c;
-  --input-background: #1a2b3c;
-  --table-header-bg: #16202a;
-  --table-row-bg: #23283a;
-  --table-row-alt-bg: #293447;
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
-  font-size: 16px;
-  line-height: 24px;
-  font-weight: 400;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-}
-
-/* html, body {
-  height: 100%;
-} */
-
-body {
-  min-height: calc(100vh - 24px - 89px); /* Ensure body takes full height minus header */
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-family: inherit;
-  background: var(--background-gradient);
-  background-position: fixed;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  background-size: cover;
-  margin: 0;
-  color: var(--text-color);
-  padding: 0px 10px;
-  overflow-x: hidden; /* Prevent scrollbars from appearing */
-}
-
-main {
-  flex: 1 0 auto;
-  display: flex;
-  flex-direction: column;
-  margin-top: 50px;
-}
-
-/* Header styling */
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(31, 31, 31, 0.8); /* Translucent background */
-  padding: 1rem 2rem;
-  border-bottom: 1px solid var(--tile-border);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(10px); /* Add a blur effect for a glassy look */
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: calc(100% - 4rem);
-  z-index: 1000; /* Ensure header is above other content */
-}
-
-.header-left h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  color: var(--text-color);
-}
-
-.header-right a {
-  margin-left: 1.5rem;
-  font-size: 1rem;
-  color: var(--glow-color-1);
-  text-decoration: none;
-  transition: color 0.3s ease, text-shadow 0.3s ease;
-}
-
-.header-right a:hover {
-  color: var(--glow-color-2);
-  text-shadow: 0 0 5px var(--hover-glow);
-}
-
-/* Hide header-right on small screens */
-@media (max-width: 500px) {
-  .header-right {
-    display: none;
-  }
-}
-
-body {
-  font-family: inherit;
-  background: var(--background-gradient);
-  background-position: fixed;
-  background-repeat: no-repeat;
-  background-attachment: fixed;
-  background-size: cover;
-  margin: 0;
-  color: var(--text-color);
-  min-height: 100vh;
-  position: relative;
-  top: 0;
-  padding: 0px 10px 0px 10px;
-}
-
-main {
-  flex: 1; /* Allow the main content to expand and push the footer down */
-  display: flex;
-  /* flex-direction: column; */
-  min-height: 100%;
-  height: auto;
-  min-height: calc(100vh - 57px - 89px); /* Ensure the main container fills the body */
-  box-sizing: border-box;
-}
-
-.container {
-  display: flex;
-  padding: 1rem;
-  flex-wrap: wrap;
-  /* flex-direction: row; */
-  /* align-items: center; */
-  gap: 20px;
-  width: 90vw;
-  max-width: 1320px;
-}
-
-.tile {
-  background: var(--tile-background);
-  max-width: 1600px;
-  /* margin: auto; */
-  object-fit: content;
-  padding: 2em 2.5em 2.5em 2.5em;
-  border-radius: 18px;
-  box-shadow: 0 4px 32px var(--hover-glow), 0 1.5px 0 var(--tile-border);
-  border: 1.5px solid var(--tile-border);
-  /* width: calc(100% - 132px); */
-  width: 100%;
-  /* margin: 20px auto; */
-}
-
-.tile.small {
-  width: fit-content;
-  flex: 1 1 40%;
-  /* gap: 20px; */
-}
-
-.tile.btn {
-  text-align: center;
-}
-
-h1 {
-  text-align: center;
-  color: var(--text-color);
-  margin-bottom: 1.5em;
-}
-
-form label {
-  display: block;
-  margin-top: 1.2em;
-  font-weight: 500;
-  color: var(--text-color);
-  letter-spacing: 1px;
-  font-weight: bold;
-}
-
-.teams, .rooms {
-  width: 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin: 1em 0;
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  /* justify-content: space-between; */
-  gap: 50px;
-}
-
-.setting input, .teams input, .rooms input, input[type="number"] {
-  padding: 0.5em 0.8em;
-  border: 1.5px solid var(--tile-border);
-  border-radius: 7px;
-  font-size: 1em;
-  margin-bottom: 0.5em;
-  background: var(--input-background);
-  color: var(--text-color);
-  transition: border 0.2s, background 0.2s, box-shadow 0.2s;
-  box-shadow: 0 0 0 0 var(--glow-color-1);
-  flex: 1 1;
-}
-
-input[type="number"] {
-  max-width: 100px;
-  flex: 0;
-}
-
- input:hover,  input:hover {
-  border: 1.5px solid var(--glow-color-2);
-  outline: none;
-  background: #22344a;
-  box-shadow: 0 0 8px var(--hover-glow), 0 0 12px var(--glow-color-1);
-  transform: translateY(-1px);
-}
-
-button {
-  background: var(--button-background);
-  color: var(--text-color);
-  border: 1px solid transparent;
-  border-radius: 8px;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  letter-spacing: 1px;
-  /* box-shadow: 0 0 4px rgba(0, 0, 0, 0.5); */
-  box-shadow: 0 0 3px var(--hover-glow), 0 0 5px var(--glow-color-1);
-  margin: 0.5rem 0 0 0;
-  width: 100%;
-  box-sizing: border-box;
-  cursor: pointer;
-  max-width: 260px;
-  transition: box-shadow 0.3s ease, transform 0.3s ease, background 0.2s, color 0.2s, border 0.2s;
-}
-
-button:hover {
-  box-shadow: 0 0 6px var(--hover-glow), 0 0 10px var(--glow-color-1);
-  color: #fff;
-  border: 1px solid var(--glow-color-2);
-  transform: translateY(-2px);
-}
-    </style>
+    <title>QSets</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Bible Quiz Set Generator</h1>
-    <p>Generate fair and unpredictable question sets for Bible quiz competitions with proper RTF and JSON export formats.</p>
+    <header class="header">
+      <div class="header-left">
+        <h1>QSets</h1>
+      </div>
+      <div class="header-right">
+        <a id="quizstuff-link" href="https://www.quizstuff.com">QuizStuff</a>
+      </div>
+    </header>
+    
+    <main>
+        <div class="container">
+            <h2>1. Upload Question Pool</h2>
+            <div class="form-group">
+                <div class="upload-section">
+                    <div class="upload-option">
+                        <select id="presetSelect">
+                            <option value="">Select a preset...</option>
+                        </select>
+                    </div>
+                    <div class="upload-divider">OR</div>
+                    <div class="upload-option">
+                        <button id="csvFileBtn" type="button">Select CSV File</button>
+                        <input type="file" id="csvFile" accept=".csv" style="display: none;" />
+                        <span id="selectedFileName"></span>
+                    </div>
+                </div>
+                <div class="file-info">
+                    <strong>CSV Format:</strong> Question, Type, Reference, Answer<br>
+                    <strong>Supported Types:</strong> General, According-To, Quote, Reference, Situation, In-What-Book-and-Chapter, Context, Verse
+                </div>
+            </div>
+            <div id="fileStatus"></div>
+        </div>
 
-    <!-- File Upload Section -->
-    <div class="container">
-        <h2>1. Upload Question Pool</h2>
-        <div class="form-group">
-            <label for="csvFile">Select CSV File:</label>
-            <input type="file" id="csvFile" accept=".csv" />
-            <div class="file-info">
-                <strong>CSV Format:</strong> Question, Type, Reference, Answer<br>
-                <strong>Supported Types:</strong> General, According-To, Quote, Reference, Situation, In-What-Book-and-Chapter, Context, Verse
+        <!-- Book and Chapter Selection -->
+        <div class="container">
+            <h2>2. Select Books and Chapters</h2>
+            <div id="bookSelection" class="book-selection">
+                <!-- Book selection will be populated after CSV upload -->
+                <div class="info">Please upload a CSV file first to see available books.</div>
             </div>
         </div>
-        <div id="fileStatus"></div>
-    </div>
 
-    <!-- Book and Chapter Selection -->
-    <div class="container">
-        <h2>2. Select Books and Chapters</h2>
-        <div id="bookSelection" class="book-selection">
-            <!-- Book selection will be populated after CSV upload -->
-            <div class="info">Please upload a CSV file first to see available books.</div>
+        <!-- Set Generation Options -->
+        <div class="container">
+            <h2>3. Set Generation Options</h2>
+            <div class="set-options-row">
+                <div class="form-group">
+                    <label for="numSets">Number of Sets:</label>
+                    <input type="number" id="numSets" min="1" max="20" value="1" />
+                </div>
+                <div class="form-group">
+                    <label for="setNamePrefix">Set Name Prefix:</label>
+                    <input type="text" id="setNamePrefix" value="SET #" placeholder="e.g., SET #, Round " />
+                </div>
+                <div class="form-group">
+                    <div class="radio-container">
+                        <label class="radio-option">
+                            <input type="radio" name="questionType" id="useSituation" value="situation" checked />
+                            <span class="radio-label">Situation Questions</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="questionType" id="useInWhatBook" value="inWhatBook" />
+                            <span class="radio-label">In What Book & Chapter Questions</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- Set Generation Options -->
-    <div class="container">
-        <h2>3. Set Generation Options</h2>
-        <div class="form-group">
-            <label for="numSets">Number of Sets:</label>
-            <input type="number" id="numSets" min="1" max="20" value="1" />
+        <!-- Generate Button -->
+        <div class="container generate-section">
+            <h2>4. Generate Sets</h2>
+            <button id="generateBtn" onclick="generateSets()" disabled>Generate Question Sets</button>
+            <div id="generateStatus"></div>
         </div>
-        <div class="form-group">
-            <label for="setNamePrefix">Set Name Prefix:</label>
-            <input type="text" id="setNamePrefix" value="SET #" placeholder="e.g., SET #, Round " />
-        </div>
-        <div class="form-group">
-            <label>
-                <input type="checkbox" id="useSituation" checked />
-                Use Situation questions (uncheck for In-What-Book-and-Chapter)
-            </label>
-        </div>
-    </div>
 
-    <!-- Generate Button -->
-    <div class="container">
-        <h2>4. Generate Sets</h2>
-        <button id="generateBtn" onclick="generateSets()" disabled>Generate Question Sets</button>
-        <div id="generateStatus"></div>
-    </div>
-
-    <!-- Results Section -->
-    <div id="results" class="container" style="display: none;">
-        <h2>Generated Sets</h2>
-        <div id="setResults"></div>
-        <div class="download-buttons">
-            <button id="downloadRTF" onclick="downloadRTF()">Download RTF (for Quizmasters)</button>
-            <button id="downloadJSON" onclick="downloadJSON()">Download JSON (for QPerformance)</button>
+        <!-- Results Section -->
+        <div id="results" class="container" style="display: none;">
+            <h2>Generated Sets</h2>
+            <div id="setResults"></div>
+            <div class="download-buttons">
+                <button id="downloadRTF" onclick="downloadRTF()">Download RTF (for Quizmasters)</button>
+                <button id="downloadJSON" onclick="downloadJSON()">Download JSON (for QPerformance)</button>
+            </div>
         </div>
-    </div>
+    </main>
+    
+    <footer class="footer">
+      <p>
+        Created by <a href="https://dbwrush.com" target="_blank">David Rush</a> and <a href="https://msparenti.com" target="_blank">Michael Parenti</a>.
+      </p>
+    </footer>
 
     <script src="main.js"></script>
     <script>
@@ -481,17 +108,129 @@ button:hover {
         let availableBooks = [];
         let sectionTag = '';
 
+        // Preset configurations - Easy to add new presets!
+        // To add a new preset, just add one line with: name, csvFile, and questionType
+        const presetConfigs = [
+            { key: 'luke-2025', name: 'Luke 2025', csvFile: 'sample_questions.csv', questionType: 'situation' },
+            // Add more presets here - each line creates a new preset option:
+            // { key: 'unique-key', name: 'Display Name', csvFile: 'filename.csv', questionType: 'situation' or 'inWhatBook' },
+        ];
+
+        // Auto-generate presets object from configs
+        const presets = {};
+        presetConfigs.forEach(config => {
+            presets[config.key] = {
+                name: config.name,
+                csvFile: config.csvFile,
+                useSituation: config.questionType === 'situation',
+                books: [] // Will be auto-detected from CSV
+            };
+        });
+
+        // Populate preset dropdown on page load
+        function populatePresetDropdown() {
+            const select = document.getElementById('presetSelect');
+            presetConfigs.forEach(config => {
+                const option = document.createElement('option');
+                option.value = config.key;
+                option.textContent = config.name;
+                select.appendChild(option);
+            });
+        }
+
+        // Initialize dropdown
+        populatePresetDropdown();
+
         // File upload handling
         document.getElementById('csvFile').addEventListener('change', handleFileUpload);
+        document.getElementById('csvFileBtn').addEventListener('click', () => {
+            document.getElementById('csvFile').click();
+        });
+        document.getElementById('presetSelect').addEventListener('change', handlePresetSelection);
+
+        async function handlePresetSelection(event) {
+            const selectedPreset = event.target.value;
+            
+            if (!selectedPreset) {
+                // Clear any existing data
+                questionPool = [];
+                availableBooks = [];
+                document.getElementById('fileStatus').innerHTML = '';
+                document.getElementById('bookSelection').innerHTML = '<div class="info">Please select a preset or upload a CSV file.</div>';
+                document.getElementById('generateBtn').disabled = true;
+                document.getElementById('selectedFileName').textContent = '';
+                document.getElementById('csvFile').value = '';
+                return;
+            }
+
+            const preset = presets[selectedPreset];
+            const status = document.getElementById('fileStatus');
+            
+            try {
+                status.innerHTML = '<div class="info">Loading preset: ' + preset.name + '...</div>';
+                
+                // Load the actual CSV file for the preset
+                const response = await fetch(preset.csvFile);
+                if (!response.ok) {
+                    throw new Error(`Failed to load preset CSV: ${response.status} ${response.statusText}`);
+                }
+                const csvText = await response.text();
+                const result = csvToQuestionPool(csvText);
+                
+                questionPool = result.questions;
+                
+                // Set the question type radio button based on preset
+                if (preset.useSituation) {
+                    document.getElementById('useSituation').checked = true;
+                    document.getElementById('useInWhatBook').checked = false;
+                } else {
+                    document.getElementById('useSituation').checked = false;
+                    document.getElementById('useInWhatBook').checked = true;
+                }
+                
+                status.innerHTML = `<div class="success">
+                    ✓ Loaded preset: ${preset.name} (${result.validRows} questions)
+                    ${result.errors.length > 0 ? `<br>⚠ ${result.errors.length} warnings (check console)` : ''}
+                </div>`;
+                
+                // Auto-detect available books from the loaded CSV
+                extractAvailableBooks();
+                populateBookSelection();
+                
+                // Auto-select all available books
+                setTimeout(() => {
+                    document.querySelectorAll('.book-checkbox').forEach(checkbox => {
+                        checkbox.checked = true;
+                    });
+                    updateSectionTag();
+                }, 100);
+                
+                document.getElementById('generateBtn').disabled = false;
+                document.getElementById('selectedFileName').textContent = '';
+                document.getElementById('csvFile').value = '';
+                
+            } catch (error) {
+                status.innerHTML = `<div class="error">Error loading preset: ${error.message}</div>`;
+                questionPool = [];
+                document.getElementById('generateBtn').disabled = true;
+            }
+        }
 
         async function handleFileUpload(event) {
             const file = event.target.files[0];
             const status = document.getElementById('fileStatus');
+            const fileNameSpan = document.getElementById('selectedFileName');
+            const presetSelect = document.getElementById('presetSelect');
             
             if (!file) {
                 status.innerHTML = '';
+                fileNameSpan.textContent = '';
                 return;
             }
+
+            // Clear preset selection when user uploads a file
+            presetSelect.value = '';
+            fileNameSpan.textContent = `Selected: ${file.name}`;
 
             try {
                 status.innerHTML = '<div class="info">Loading CSV file...</div>';
@@ -512,6 +251,7 @@ button:hover {
                 status.innerHTML = `<div class="error">Error loading file: ${error.message}</div>`;
                 questionPool = [];
                 document.getElementById('generateBtn').disabled = true;
+                fileNameSpan.textContent = '';
             }
         }
 

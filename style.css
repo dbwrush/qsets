@@ -1,0 +1,727 @@
+:root {
+  --background-gradient: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+  --glow-color-1: #24c8db;
+  --glow-color-2: #1dd1a1;
+  --glow-color-3: #3b82f6;
+  --text-color: #fff;
+  --tile-background: rgba(31, 31, 31, 0.8);
+  --tile-border: #2c5364;
+  --hover-glow: rgba(36, 200, 219, 0.3);
+  --button-background: #1a2b3c;
+  --input-background: #1a2b3c;
+  --table-header-bg: #16202a;
+  --table-row-bg: #23283a;
+  --table-row-alt-bg: #293447;
+  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-weight: 400;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* Base styles */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: calc(100vh - 24px - 89px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  font-family: inherit;
+  background: var(--background-gradient);
+  background-position: fixed;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+  color: var(--text-color);
+  padding: 0px 10px;
+  overflow-x: hidden;
+}
+
+main {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  margin-top: 70px;
+  width: 100%;
+  max-width: 1200px;
+}
+
+/* Header styling */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(31, 31, 31, 0.8);
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--tile-border);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+}
+
+.header-left h1 {
+  margin: 0;
+  font-size: 1.5rem;
+  color: var(--text-color);
+}
+
+.header-right a {
+  margin-left: 1.5rem;
+  font-size: 1rem;
+  color: var(--glow-color-1);
+  text-decoration: none;
+  transition: color 0.3s ease, text-shadow 0.3s ease;
+}
+
+.header-right a:hover {
+  color: var(--glow-color-2);
+  text-shadow: 0 0 5px var(--hover-glow);
+}
+
+/* Container - main tile styling */
+.container {
+  background: var(--tile-background);
+  max-width: 1200px;
+  padding: 2em 2.5em 2.5em 2.5em;
+  border-radius: 18px;
+  box-shadow: 0 4px 32px var(--hover-glow), 0 1.5px 0 var(--tile-border);
+  border: 1.5px solid var(--tile-border);
+  width: 100%;
+  margin: 20px auto;
+  transition: transform 0.2s, box-shadow 0.2s, border 0.2s;
+}
+
+.container:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 40px var(--hover-glow), 0 2px 0 var(--tile-border), 0 0 15px var(--glow-color-1);
+  border: 1.5px solid var(--glow-color-2);
+}
+
+/* Typography */
+h1, h2 {
+  text-align: center;
+  color: var(--text-color);
+  margin-bottom: 1.5em;
+}
+
+h2 {
+  margin-bottom: 1em;
+  font-size: 1.5rem;
+}
+
+/* Form elements */
+.form-group {
+  margin-bottom: 1.5rem;
+}
+
+/* Set generation options layout */
+.set-options-row {
+  display: flex;
+  gap: 20px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.set-options-row .form-group {
+  margin-bottom: 0;
+  flex: 1;
+  min-width: 200px;
+  max-width: 300px;
+}
+
+.set-options-row .form-group:last-child {
+  flex: none;
+  min-width: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Generate button centering */
+.generate-section {
+  text-align: center;
+}
+
+.generate-section button {
+  margin: 0 auto;
+  display: inline-block;
+  min-width: 250px;
+  padding: 1em 2em;
+  font-size: 1.1em;
+}
+
+.generate-section #generateStatus {
+  margin-top: 1em;
+  text-align: center;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+  margin-bottom: 8px;
+  color: var(--text-color);
+  letter-spacing: 0.5px;
+}
+
+/* Upload section styling */
+.upload-section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+  min-height: 50px;
+}
+
+.upload-option {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  min-height: 50px;
+  justify-content: flex-start;
+}
+
+.upload-option select,
+.upload-option button {
+  height: 44px;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  box-sizing: border-box;
+  font-size: 1em;
+}
+
+.upload-option select {
+  padding-right: 30px; /* Space for dropdown arrow */
+}
+
+.upload-divider {
+  font-weight: bold;
+  color: var(--glow-color-1);
+  padding: 0 15px;
+  font-size: 1.1em;
+  line-height: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+#selectedFileName {
+  font-size: 0.9em;
+  color: var(--glow-color-2);
+  margin-top: 5px;
+  font-style: italic;
+}
+
+/* Input styling with hover effects */
+input[type="text"], 
+input[type="number"], 
+input[type="file"], 
+select, 
+textarea {
+  width: 100%;
+  padding: 0.5em 0.8em;
+  border: 1.5px solid var(--tile-border);
+  border-radius: 7px;
+  font-size: 1em;
+  margin-bottom: 0.5em;
+  background: var(--input-background);
+  color: var(--text-color);
+  transition: border 0.2s, background 0.2s, box-shadow 0.2s, transform 0.2s;
+  box-shadow: 0 0 0 0 var(--glow-color-1);
+}
+
+input[type="text"]:hover, 
+input[type="number"]:hover, 
+input[type="file"]:hover, 
+select:hover, 
+textarea:hover,
+input[type="text"]:focus, 
+input[type="number"]:focus, 
+input[type="file"]:focus, 
+select:focus, 
+textarea:focus {
+  border: 1.5px solid var(--glow-color-2);
+  outline: none;
+  background: #22344a;
+  box-shadow: 0 0 8px var(--hover-glow), 0 0 12px var(--glow-color-1);
+  transform: translateY(-1px);
+}
+
+/* Specific input sizing */
+#setNamePrefix, #csvFile {
+  max-width: 300px;
+}
+
+input[type="number"] {
+  max-width: 100px;
+}
+
+/* Checkbox styling */
+input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--tile-border);
+  border-radius: 4px;
+  background: var(--input-background);
+  cursor: pointer;
+  position: relative;
+  transition: border 0.2s, box-shadow 0.2s, transform 0.2s;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+input[type="checkbox"]:hover {
+  border: 2px solid var(--glow-color-2);
+  box-shadow: 0 0 8px var(--hover-glow), 0 0 12px var(--glow-color-1);
+  transform: scale(1.1);
+}
+
+input[type="checkbox"]:checked {
+  border: 2px solid var(--glow-color-1);
+  background: var(--glow-color-1);
+}
+
+input[type="checkbox"]:checked::after {
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+
+
+/* Button styling */
+button {
+  background: var(--button-background);
+  color: var(--text-color);
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  letter-spacing: 1px;
+  box-shadow: 0 0 3px var(--hover-glow), 0 0 5px var(--glow-color-1);
+  margin: 0.5rem 0.5rem 0.5rem 0;
+  cursor: pointer;
+  transition: box-shadow 0.3s ease, transform 0.3s ease, background 0.2s, color 0.2s, border 0.2s;
+}
+
+button:hover {
+  box-shadow: 0 0 6px var(--hover-glow), 0 0 10px var(--glow-color-1);
+  color: #fff;
+  border: 1px solid var(--glow-color-2);
+  transform: translateY(-2px);
+}
+
+button:disabled {
+  background: #2c3e50;
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+  transform: none;
+}
+
+button:disabled:hover {
+  transform: none;
+  box-shadow: none;
+  border: 1px solid transparent;
+}
+
+/* Book selection grid */
+.book-selection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.book-item {
+  background: var(--input-background);
+  padding: 20px;
+  border-radius: 12px;
+  border: 1.5px solid var(--tile-border);
+  transition: transform 0.2s, box-shadow 0.2s, border 0.2s;
+}
+
+.book-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px var(--hover-glow), 0 0 8px var(--glow-color-1);
+  border: 1.5px solid var(--glow-color-2);
+}
+
+.book-item label {
+  display: flex;
+  align-items: center;
+  margin-bottom: 15px;
+  cursor: pointer;
+}
+
+.book-item strong {
+  color: var(--glow-color-1);
+}
+
+.book-item small {
+  color: #aaa;
+  font-size: 0.9em;
+  margin-top: 10px;
+  display: block;
+}
+
+/* Chapter range styling */
+.chapter-range {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+  margin-top: 15px;
+  flex-wrap: wrap;
+}
+
+.chapter-range label {
+  margin: 0;
+  white-space: nowrap;
+  font-size: 0.9em;
+}
+
+.chapter-range input {
+  width: 70px;
+  margin: 0;
+}
+
+/* Status messages */
+.info {
+  color: var(--text-color);
+  background: var(--tile-background);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  box-shadow: 0 2px 4px var(--hover-glow), 0 0 8px var(--glow-color-1);
+  border: 1px solid var(--tile-border);
+}
+
+.success {
+  color: #2e7d32;
+  background: rgba(76, 175, 80, 0.1);
+  border: 1px solid #4caf50;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.error {
+  color: #d32f2f;
+  background: rgba(244, 67, 54, 0.1);
+  border: 1px solid #f44336;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.warning {
+  color: #f57c00;
+  background: rgba(255, 152, 0, 0.1);
+  border: 1px solid #ff9800;
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.warning span {
+  color: #f57c00;
+  font-weight: bold;
+}
+
+/* File info styling */
+.file-info {
+  background: var(--table-row-bg);
+  border: 1px solid var(--tile-border);
+  padding: 15px;
+  border-radius: 8px;
+  margin-top: 15px;
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+
+/* Results section */
+.set-info {
+  background: var(--input-background);
+  padding: 15px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  border: 1px solid var(--tile-border);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.set-info:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px var(--hover-glow);
+}
+
+/* Download buttons */
+.download-buttons {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.download-buttons button {
+  min-width: 200px;
+}
+
+/* Radio button styling from example.css */
+input[type="radio"] {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--tile-border);
+  border-radius: 50%;
+  background: var(--input-background);
+  cursor: pointer;
+  position: relative;
+  transition: border 0.2s, box-shadow 0.2s, transform 0.2s;
+  flex-shrink: 0;
+  flex-grow: 0;
+  flex-basis: auto;
+  margin: 0;
+  padding: 0;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+input[type="radio"]:hover {
+  border: 2px solid var(--glow-color-2);
+  box-shadow: 0 0 8px var(--hover-glow), 0 0 12px var(--glow-color-1);
+  transform: scale(1.1);
+}
+
+input[type="radio"]:checked {
+  border: 2px solid var(--glow-color-1);
+  background: var(--glow-color-1);
+}
+
+input[type="radio"]:checked::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: white;
+}
+
+.radio-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: 5px;
+}
+
+.radio-option {
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--text-color);
+  font-size: 1em;
+  transition: color 0.2s;
+}
+
+.radio-option:hover {
+  color: var(--glow-color-2);
+}
+
+.radio-label {
+  margin-left: 5px;
+  user-select: none;
+}
+
+.radio-group-label {
+  font-weight: 500;
+  color: var(--text-color);
+  margin-bottom: 5px;
+}
+
+/* Footer styling */
+.footer {
+  background: rgba(31, 31, 31, 0.8);
+  color: var(--text-color);
+  text-align: center;
+  padding: 1rem;
+  border-top: 1px solid var(--tile-border);
+  box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(10px);
+  width: 100vw;
+  position: static;
+  left: 0;
+  bottom: 0;
+  margin-top: auto;
+  margin-left: -10px;
+  margin-right: -10px;
+}
+
+.footer a {
+  color: var(--glow-color-1);
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
+
+.footer a:hover {
+  color: var(--glow-color-2);
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .header {
+    padding: 1rem;
+    width: 100%;
+  }
+  
+  .header-right {
+    display: none;
+  }
+  
+  .container {
+    padding: 1.5em;
+    margin: 10px auto;
+  }
+  
+  .book-selection {
+    grid-template-columns: 1fr;
+  }
+  
+  .chapter-range {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  
+  .chapter-range input {
+    width: 100px;
+  }
+  
+  .download-buttons {
+    flex-direction: column;
+  }
+  
+  .download-buttons button {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  body {
+    padding: 0px 5px;
+  }
+  
+  .footer {
+    margin-left: -5px;
+    margin-right: -5px;
+  }
+  
+  .upload-section {
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+  }
+  
+  .upload-option {
+    width: 100%;
+    max-width: 300px;
+  }
+  
+  .upload-option select,
+  .upload-option button {
+    width: 100%;
+    min-width: auto;
+  }
+  
+  .upload-divider {
+    padding: 10px 0;
+    order: 1;
+  }
+  
+  .upload-option:first-child {
+    order: 0;
+  }
+  
+  .upload-option:last-child {
+    order: 2;
+  }
+  
+  .set-options-row {
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+  }
+  
+  .set-options-row .form-group {
+    width: 100%;
+    max-width: 300px;
+    min-width: auto;
+  }
+  
+  .generate-section button {
+    min-width: auto;
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+@media (max-width: 480px) {
+  .container {
+    padding: 1em;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  h2 {
+    font-size: 1.3rem;
+  }
+  
+  .chapter-range {
+    gap: 8px;
+  }
+  
+  .chapter-range input {
+    width: 80px;
+  }
+}
