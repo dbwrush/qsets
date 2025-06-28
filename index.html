@@ -109,6 +109,7 @@
         let generatedSets = [];
         let availableBooks = [];
         let sectionTag = '';
+        let copyrightInfo = '';
 
         // Preset configurations - Easy to add new presets!
         // To add a new preset, just add one line with: name, csvFile, and questionType
@@ -156,6 +157,8 @@
                 // Clear any existing data
                 questionPool = [];
                 availableBooks = [];
+                copyrightInfo = '';
+                console.log("Set copyright info to empty");
                 document.getElementById('fileStatus').innerHTML = '';
                 document.getElementById('bookSelection').innerHTML = '<div class="info">Please select a preset or upload a CSV file.</div>';
                 document.getElementById('generateBtn').disabled = true;
@@ -179,6 +182,8 @@
                 const result = csvToQuestionPool(csvText);
                 
                 questionPool = result.questions;
+                copyrightInfo = result.copyrightInfo || '';
+                console.log("Set copyright info to:", copyrightInfo);
                 
                 // Set the question type radio button based on preset
                 if (preset.useSituation) {
@@ -238,6 +243,9 @@
                 const result = await readCSVFile(file);
                 
                 questionPool = result.questions;
+                copyrightInfo = result.copyrightInfo || '';
+                console.log("Set copyright info to: ", copyrightInfo)
+                
                 status.innerHTML = `<div class="success">
                     ✓ Loaded ${result.validRows} questions from ${result.totalRows} rows
                     ${result.errors.length > 0 ? `<br>⚠ ${result.errors.length} warnings (check console)` : ''}
@@ -251,6 +259,7 @@
             } catch (error) {
                 status.innerHTML = `<div class="error">Error loading file: ${error.message}</div>`;
                 questionPool = [];
+                copyrightInfo = '';
                 document.getElementById('generateBtn').disabled = true;
                 fileNameSpan.textContent = '';
             }
@@ -429,7 +438,7 @@
                     setNames.push(`${document.getElementById('setNamePrefix').value}${i}`);
                 }
                 
-                const rtfContent = genRTFFile(setNames, generatedSets, sectionTag);
+                const rtfContent = genRTFFile(setNames, generatedSets, sectionTag, copyrightInfo);
                 downloadFile(rtfContent, `${sectionTag.replace(/[^a-zA-Z0-9-]/g, '_')}_sets.rtf`, 'application/rtf');
             } catch (error) {
                 alert('Error generating RTF: ' + error.message);

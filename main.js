@@ -86,6 +86,24 @@ function csvToQuestionPool(csvText, options = {}) {
     
     const questions = [];
     const errors = [];
+    let copyrightInfo = '';
+    
+    // Check for copyright info - look for any row beginning with "LICENSE" in all caps
+    const licenseRowIndex = dataRows.findIndex(row => {
+        const firstField = row[0]?.trim() || '';
+        return firstField.startsWith('LICENSE');
+    });
+    
+    if (licenseRowIndex !== -1) {
+        const licenseRow = dataRows[licenseRowIndex];
+        // Combine all non-empty fields from the license row as copyright info
+        copyrightInfo = licenseRow.filter(field => field && field.trim() !== '').join(', ').trim();
+        console.log('License/copyright info detected:', copyrightInfo);
+        
+        // Remove the license row from processing as questions
+        dataRows.splice(licenseRowIndex, 1);
+        console.log('Removed license row from question processing');
+    }
     
     dataRows.forEach((row, index) => {
         const rowNumber = opts.hasHeader ? index + 2 : index + 1; // For error reporting
@@ -153,7 +171,8 @@ function csvToQuestionPool(csvText, options = {}) {
         questions,
         errors,
         totalRows: dataRows.length,
-        validRows: questions.length
+        validRows: questions.length,
+        copyrightInfo
     };
 }
 
@@ -677,18 +696,25 @@ function genQperfFile(roundNames, sets) {// From a collection of sets, generate 
     return JSON.stringify(qperfFile, null, 2);
 }
 
-function genRTFFile(roundNames, sets, sectionTag) {// Generate an RTF format string of the question set to be included in the file.
+function genRTFFile(roundNames, sets, sectionTag, copyrightInfo = '') {// Generate an RTF format string of the question set to be included in the file.
     // roundNames = array of round names, these are the names of the sets too. (i.e., they might be "Set #1" or "Round #1" or whatever the user specified)
     // sets = array of sets, each set is an array of question objects.
     // sectionTag = a tag describing which part of the Bible the questions are from, e.g., "Luke 3-20"
+    // copyrightInfo = copyright information extracted from the CSV file
     
     if (roundNames.length !== sets.length) {
         throw new Error("roundNames and sets must be the same length");
     }
 
     // Helper function to generate RTF header with fonts, headers, and footers
-    function generateRTFHeader(sectionTag) {
-        return `{\\rtf1\\ansi\\ansicpg1252\\deff0\\deflang1033{\\fonttbl{\\f0swiss\\fcharset0 Arial;}{\\f1\\froman\\fcharset0 Times New Roman;}} \\viewkind4\\uc1 {\\header \\pard\\plain \\s15\\qr \\li0\\ri0\\widctlpar\\tqc\\tx4320\\tqr\\tx8640\\aspalpha\\aspnum\\faauto \\adjustright\\rin0\\lin0\\itap0\\pararsid6843047 \\fs14\\lang1033\\langfe1033\\cgrid\\langnp1033\\langfenp1033 { ${sectionTag} \\par }}{\\footer \\pard\\plain \\s16\\ql \\li0\\ri0\\widctlpar\\brdrb\\brdrs\\brdrw15\\brsp20 \\tqc\\tx4320\\tqr\\tx8640\\aspalpha\\aspnum\\faauto\\adjustright\\rin0\\lin0\\itap0 \\fs14\\lang1033\\langfe1033\\cgrid\\langnp1033\\langfenp1033 {${sectionTag} \\par }}{\\footer { \\par \\pard \\s16\\qc \\li0\\ri0\\widctlpar\\brdrt\\brdrs\\brdrw15\\brsp20 \\brdrb\\brdrs\\brdrw15\\brsp20 \\tqc\\tx4320\\tqr\\tx8640\\aspalpha\\aspnum\\faauto\\adjustright\\rin0\\lin0\\rtlgutter\\itap0 \\f1\\fs14 A=According To  |  G=General  |  I=In what book & chapter  |  Q=Quote  |  R=Reference  |  S=Situation  |  X=Context  |  V=Verse \\par \\pard \\s16\\ql \\li0\\ri0\\widctlpar\\tqc\\tx4320\\tqr\\tx8640\\aspalpha\\aspnum\\faauto\\adjustright\\rin0\\lin0\\itap0 \\par\\f1\\fs14 Unless noted otherwise, Scripture quotations are from the Holy Bible, New International Version\\'ae (NIV\\'ae). Copyright \\'a9 2011 by Biblica Inc.\\'99 Used by permission. All rights reserved worldwide.  \\par }}`;
+    function generateRTFHeader(sectionTag, copyrightTag = '') {
+        // Throw a warning if copyrightTag is not provided
+        if (!copyrightTag) {
+            console.warn("No copyright tag provided");
+            // Example copyright tag:  Unless noted otherwise, Scripture quotations are from the Holy Bible, New International Version\\'ae (NIV\\'ae). Copyright \\'a9 2011 by Biblica Inc.\\'99 Used by permission. All rights reserved worldwide.  
+            alert("Question pool is missing copyright info! Please insert a blank row, followed by a row with copyright / license info at the bottom of the CSV file.");
+        }
+        return `{\\rtf1\\ansi\\ansicpg1252\\deff0\\deflang1033{\\fonttbl{\\f0swiss\\fcharset0 Arial;}{\\f1\\froman\\fcharset0 Times New Roman;}} \\viewkind4\\uc1 {\\header \\pard\\plain \\s15\\qr \\li0\\ri0\\widctlpar\\tqc\\tx4320\\tqr\\tx8640\\aspalpha\\aspnum\\faauto \\adjustright\\rin0\\lin0\\itap0\\pararsid6843047 \\fs14\\lang1033\\langfe1033\\cgrid\\langnp1033\\langfenp1033 { ${sectionTag} \\par }}{\\footer \\pard\\plain \\s16\\ql \\li0\\ri0\\widctlpar\\brdrb\\brdrs\\brdrw15\\brsp20 \\tqc\\tx4320\\tqr\\tx8640\\aspalpha\\aspnum\\faauto\\adjustright\\rin0\\lin0\\itap0 \\fs14\\lang1033\\langfe1033\\cgrid\\langnp1033\\langfenp1033 {${sectionTag} \\par }}{\\footer { \\par \\pard \\s16\\qc \\li0\\ri0\\widctlpar\\brdrt\\brdrs\\brdrw15\\brsp20 \\brdrb\\brdrs\\brdrw15\\brsp20 \\tqc\\tx4320\\tqr\\tx8640\\aspalpha\\aspnum\\faauto\\adjustright\\rin0\\lin0\\rtlgutter\\itap0 \\f1\\fs14 A=According To  |  G=General  |  I=In what book & chapter  |  Q=Quote  |  R=Reference  |  S=Situation  |  X=Context  |  V=Verse \\par \\pard \\s16\\ql \\li0\\ri0\\widctlpar\\tqc\\tx4320\\tqr\\tx8640\\aspalpha\\aspnum\\faauto\\adjustright\\rin0\\lin0\\itap0{${copyrightTag}}\\par\\f1\\fs14\\par }}`;
     }
 
     // Helper function to generate set header
@@ -736,7 +762,7 @@ function genRTFFile(roundNames, sets, sectionTag) {// Generate an RTF format str
     }
 
     // Build the RTF content
-    let rtfContent = generateRTFHeader(sectionTag);
+    let rtfContent = generateRTFHeader(sectionTag, copyrightInfo);
 
     // Process each set
     for (let setIndex = 0; setIndex < sets.length; setIndex++) {
