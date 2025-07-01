@@ -283,7 +283,7 @@ function shuffleArray(array) {
     return shuffled;
 }
 
-function generateQuestionSet(pool, situation, books, wholePool = null) {
+function generateQuestionSet(pool, situation, books, wholePool = null, allowChapterCounting = false) {
     // pool is an array of question objects. Each question object has a question, a type, a reference, an answer.
     // books is an array of book object. Each has a book name and a range of chapters. This way we can pull from one range of chapters from one book, and a different range from another book, for a single question set.
     // wholePool is the original complete pool before any questions were removed, used as fallback when pool is insufficient
@@ -293,6 +293,8 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
     if (wholePool) {
         wholePool = shuffleArray(wholePool);
     }
+
+    console.log("Beginning to generate a question set");
 
     // Filter the pool to only include questions from the specified books and chapters
     // books: [{ name: 'John', chapters: [1,2,3] }, ...]
@@ -310,11 +312,15 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
         return allowed[book] && allowed[book].has(chapter);
     });
 
+    console.log("Filtered pool size:", filteredPool.length);
+
     // Also filter wholePool if provided
     const filteredWholePool = wholePool ? wholePool.filter(q => {
         const { book, chapter } = getBookAndChapter(q.reference);
         return allowed[book] && allowed[book].has(chapter);
     }) : filteredPool;
+
+    console.log("Filtered whole pool size:", filteredWholePool.length);
 
     // Count total unique chapters
     const uniqueChapters = new Set(filteredPool.map(q => {
@@ -322,7 +328,12 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
         return `${book} ${chapter}`;
     }));
     const chaptersCount = uniqueChapters.size;
-    const maxAppearances = Math.max(2, Math.ceil(chaptersCount / 20));
+    // Adjusted maxAppearances calculation to be more flexible
+    // Ensure we can fit 20 questions across available chapters
+    const maxAppearances = Math.max(2, Math.ceil(20 / chaptersCount));
+
+    console.log("Unique chapters count:", chaptersCount);
+    console.log("Max appearances per chapter (not counting random swaps):", maxAppearances);
 
     // Track chapter usage
     const chapterUsage = {};
@@ -335,13 +346,29 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
 
     // Helper to pick a question of a type, not exceeding chapter limits
     function pickQuestion(type, usedChapters, poolArr) {
-        const candidates = poolArr.filter(q => {
+        // First try to find questions from unused chapters
+        let candidates = poolArr.filter(q => {
             if (q.type !== type) return false;
             if (usedQuestions.has(q)) return false;
             const { book, chapter } = getBookAndChapter(q.reference);
             const key = `${book} ${chapter}`;
             return chapterUsage[key] < maxAppearances && !usedChapters.has(key);
         });
+
+        // If no candidates from unused chapters, try from any chapter within maxAppearances limit
+        if (candidates.length === 0) {
+            console.log('No unused chapter candidates found for type:', type);
+            console.log('Falling back to any chapter candidates for type:', type);
+            candidates = poolArr.filter(q => {
+                if (q.type !== type) return false;
+                if (usedQuestions.has(q)) return false;
+                const { book, chapter } = getBookAndChapter(q.reference);
+                const key = `${book} ${chapter}`;
+                return chapterUsage[key] < maxAppearances;
+            });
+        }
+
+        console.log('Attempting to find a ' + type + ' question, candidates found:', candidates.length);
         
         if (candidates.length === 0) return null;
         const q = candidates[Math.floor(Math.random() * candidates.length)];
@@ -352,6 +379,8 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
         // Remove from poolArr
         const idx = poolArr.indexOf(q);
         if (idx !== -1) poolArr.splice(idx, 1);
+
+        console.log('Picked question:', q.question, 'from', book, chapter);
         return q;
     }
 
@@ -385,61 +414,51 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
     // Situation or In-What-Book-and-Chapter
     if (situation) {
         const q = pickQuestion('Situation', usedChapters, poolArr);
-        if (!q) return null; // Unable to find required question type
+        if (!q) {
+            console.log("Needed a situation question, but couldn't find one!")
+            return null; // Unable to find required question type
+        }
         set.push(q);
     } else {
         const q = pickQuestion('In-What-Book-and-Chapter', usedChapters, poolArr);
-        if (!q) return null; // Unable to find required question type
+        if (!q) {
+            console.log("Needed an in-what-book-and-chapter question, but couldn't find one!")
+            return null; // Unable to find required question type
+        }
         set.push(q);
     }
     // 1 quote, 1 reference, 1 verse, 1 context
     for (const type of ['Quote', 'Reference', 'Verse', 'Context']) {
         const q = pickQuestion(type, usedChapters, poolArr);
-        if (!q) return null; // Unable to find required question type
+        if (!q) {
+            console.log("Needed a " + type + " question, but couldn't find one!")
+            return null; // Unable to find required question type
+        }
         set.push(q);
     }
     // 4 According-To
     for (let i = 0; i < 4; ++i) {
         const q = pickQuestion('According-To', usedChapters, poolArr);
-        if (!q) return null; // Unable to find required question type
+        if (!q) {
+            console.log("Needed an according-to question, but couldn't find one!")
+            return null; // Unable to find required question type
+        }
         set.push(q);
     }
-    // If still not 20, fill with General questions first, then any type
+    // If still not 20, fill with General questions
     while (set.length < 20) {
         let q = null;
         
-        // First try to get a General question
+        // Try to get a General question
         if (byType['General'] && byType['General'].length > 0) {
-            q = pickQuestionAllowRepeat('General', poolArr);
-        }
-        
-        // If no General questions available, try any remaining type
-        if (!q) {
-            const allTypes = Object.keys(byType);
-            if (allTypes.length === 0) {
-                // No more question types available, return null to trigger pool refresh
-                return null;
-            }
-            
-            // Try each type until we find one with available questions
-            let foundQuestion = false;
-            for (const type of allTypes) {
-                q = pickQuestionAllowRepeat(type, poolArr);
-                if (q) {
-                    foundQuestion = true;
-                    break;
-                }
-            }
-            if (!foundQuestion) {
-                // Unable to find any more questions, return null to trigger pool refresh
-                return null;
-            }
+            q = pickQuestion('General', usedChapters, poolArr);
         }
         
         if (q) {
             set.push(q);
         } else {
             // Unable to find any more questions, return null to trigger pool refresh
+            console.log("Unable to find more questions to fill the set, returning null to trigger pool refresh");
             return null;
         }
     }
@@ -468,22 +487,25 @@ function generateQuestionSet(pool, situation, books, wholePool = null) {
                 if (q.type !== typeToReplace) return false;
                 if (usedQuestions.has(q)) return false; // Don't use questions already in the set
                 
-                const { book, chapter } = getBookAndChapter(q.reference);
-                const key = `${book} ${chapter}`;
-                
-                // Calculate current usage if we made this replacement
-                const currentUsage = set.reduce((count, setQ) => {
-                    const { book: setBook, chapter: setChapter } = getBookAndChapter(setQ.reference);
-                    const setKey = `${setBook} ${setChapter}`;
-                    return setKey === key ? count + 1 : count;
-                }, 0);
-                
-                // Account for removing the question we're replacing
-                const { book: oldBook, chapter: oldChapter } = getBookAndChapter(questionToReplace.reference);
-                const oldKey = `${oldBook} ${oldChapter}`;
-                const adjustedUsage = oldKey === key ? currentUsage - 1 : currentUsage;
-                
-                return adjustedUsage < maxAppearances;
+                if (allowChapterCounting) {
+                    const { book, chapter } = getBookAndChapter(q.reference);
+                    const key = `${book} ${chapter}`;
+                    
+                    // Calculate current usage if we made this replacement
+                    const currentUsage = set.reduce((count, setQ) => {
+                        const { book: setBook, chapter: setChapter } = getBookAndChapter(setQ.reference);
+                        const setKey = `${setBook} ${setChapter}`;
+                        return setKey === key ? count + 1 : count;
+                    }, 0);
+                    
+                    // Account for removing the question we're replacing
+                    const { book: oldBook, chapter: oldChapter } = getBookAndChapter(questionToReplace.reference);
+                    const oldKey = `${oldBook} ${oldChapter}`;
+                    const adjustedUsage = oldKey === key ? currentUsage - 1 : currentUsage;
+                    
+                    return adjustedUsage < maxAppearances;
+                }
+                return true; // No chapter counting, just type match
             });
             
             if (replacementCandidates.length > 0) {
