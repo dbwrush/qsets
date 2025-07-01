@@ -319,6 +319,20 @@
             const selectedBooks = getSelectedBooks();
             sectionTag = generateSectionTag(selectedBooks);
             
+            // Auto-select question type based on number of books
+            const situationRadio = document.getElementById('useSituation');
+            const inWhatBookRadio = document.getElementById('useInWhatBook');
+            
+            if (selectedBooks.length > 1) {
+                // Multiple books: use "In What Book and Chapter" questions
+                inWhatBookRadio.checked = true;
+                situationRadio.checked = false;
+            } else {
+                // Single book or no books: use "Situation" questions
+                situationRadio.checked = true;
+                inWhatBookRadio.checked = false;
+            }
+            
             // Show preview
             const generateBtn = document.getElementById('generateBtn');
             if (selectedBooks.length > 0) {
