@@ -764,8 +764,9 @@ function genRTFFile(roundNames, sets, sectionTag, copyrightInfo = '') {// Genera
         const typeAbbrev = getTypeAbbreviation(question.type);
         const questionText = question.question || '';
         const answerText = question.answer || '';
-        
-        return `\\pard\\fi-360\\li360\\f0\\fs15 ${typeAbbrev} \\tab ${questionNumber}. ${questionText} \\par\\tab A. ${answerText}  \\par \\par`;
+        const reference = question.reference || '';
+
+        return `\\pard\\fi-360\\li360\\f0\\fs15 ${typeAbbrev} \\tab ${questionNumber}. ${questionText} \\par\\tab A. ${answerText} (${reference}) \\par \\par`;
     }
 
     // Helper function to generate column break (for multi-set files)
