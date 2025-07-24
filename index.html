@@ -92,7 +92,7 @@
             <div id="setResults"></div>
             <div class="download-buttons">
                 <button id="downloadRTF" onclick="downloadRTF()">Download RTF (for Quizmasters)</button>
-                <button id="downloadJSON" onclick="downloadJSON()">Download JSON (for QPerformance)</button>
+                <button id="downloadJSON" onclick="downloadJSON()">Download QSET (for QPerformance)</button>
             </div>
         </div>
     </main>
@@ -467,7 +467,7 @@
                 }
                 
                 const jsonContent = genQperfFile(setNames, generatedSets);
-                downloadFile(jsonContent, `${sectionTag.replace(/[^a-zA-Z0-9-]/g, '_')}_qperf.json`, 'application/json');
+                downloadFile(jsonContent, `${sectionTag.replace(/[^a-zA-Z0-9-]/g, '_')}_qperf.qset`, 'application/json');
             } catch (error) {
                 alert('Error generating JSON: ' + error.message);
             }
